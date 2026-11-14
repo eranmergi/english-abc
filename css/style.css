@@ -172,6 +172,7 @@ input, select { font: inherit; user-select: text; -webkit-user-select: text; }
 }
 .overlay .card { background: #fff; border-radius: 32px; padding: 20px 48px 28px; text-align: center; animation: pop .45s; }
 .big-letter { font-family: var(--lat); font-size: clamp(96px, 28vw, 170px); line-height: 1.15; color: var(--brand); }
+.big-letter.wide { font-size: clamp(52px, 15vw, 120px); white-space: nowrap; }
 .ov-text { font-family: var(--heb); font-size: 32px; font-weight: 700; margin: 0; }
 
 /* ---------- round end ---------- */

@@ -7,12 +7,15 @@ const lat = (text, cls = '') => `<span class="lat ${cls}" dir="ltr" lang="en">${
 const PIC = w => `<span class="picture">${w.e}</span>`;
 
 // Other words to offer as wrong answers: no two options on screen may be too close to each other
-// (different picture, different meaning, not in one SIMILAR group).
-function others(word, list, n) {
+// (different picture, different meaning, not in one SIMILAR group; apart() can add a rule).
+// Words in `prefer` are tried first.
+function others(word, list, n, { prefer = [], apart = () => false } = {}) {
   const chosen = [word];
-  for (const x of shuffle(list)) {
+  for (const x of shuffle(prefer).concat(shuffle(list))) {
     if (chosen.length > n) break;
-    if (chosen.every(c => c.e !== x.e && c.he !== x.he && !similar(c.w, x.w))) chosen.push(x);
+    if (chosen.every(c => c.w !== x.w && c.e !== x.e && c.he !== x.he && !similar(c.w, x.w) && !apart(c.w, x.w))) {
+      chosen.push(x);
+    }
   }
   return chosen.slice(1);
 }
@@ -23,7 +26,9 @@ const Games = {
     const list = Ladder.words();
     const word = Ladder.pick(list, round.used);
     const n = Ladder.stage() >= 3 ? 4 : 3;
-    const opts = shuffle([word, ...others(word, list, n - 1)]);
+    // Wrong pictures whose words start like this one (ship/shop/shell), so the first letter is not enough.
+    const sameStart = list.filter(x => x.w[0] === word.w[0]);
+    const opts = shuffle([word, ...others(word, list, n - 1, { prefer: sameStart })]);
     return {
       used: word.w, hint: [EN(word.w)], meaning: word.he,
       show: lat(word.w, 'word'),
@@ -55,9 +60,11 @@ const Games = {
   // 3. Vocabulary, three ways: hear it → picture; read it → Hebrew meaning; see a picture → English word.
   vocab(round) {
     const word = Vocab.pick(round.used);
-    const pool = Vocab.pool();
-    const opts = shuffle([word, ...others(word, pool, 2)]);
-    const way = pick(['listen', 'meaning', 'name']);
+    // "Picture → English word" has him read every option without audio: only for words of his reading stages.
+    const way = pick(word.stage >= 1 ? ['listen', 'meaning', 'name'] : ['listen', 'meaning']);
+    const pool = way === 'name' ? Ladder.words() : Vocab.pool();
+    const apart = way === 'listen' ? hearAlike : () => false;
+    const opts = shuffle([word, ...others(word, pool, 2, { apart })]);
     const base = {
       used: word.w, meaning: word.he, withHint: false,
       rightSay: [EN(word.w), word.he],

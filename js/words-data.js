@@ -92,6 +92,13 @@ const SIMILAR = [
   ['sleep', 'cry', 'sad'],
 ];
 
+// Pairs a Hebrew-speaking child cannot tell apart by ear (th, short i vs ee, short a vs u...).
+// Kept apart when he must pick a picture by listening; in the reading game they are the point.
+const HEAR_ALIKE = [
+  ['three', 'tree'], ['bath', 'bat'], ['ship', 'sheep'], ['bag', 'bug'], ['hat', 'hot'],
+  ['lock', 'clock'], ['five', 'fire'], ['ten', 'tent'],
+];
+
 // Fill-in sentences, written by hand. a = the one right answer; e = picture; he = meaning.
 const SENTENCES = [
   ['I ___ happy.', ['am', 'is', 'are'], 'am', '😀', 'אני שמח.'],

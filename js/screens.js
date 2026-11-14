@@ -123,7 +123,8 @@ const Screens = {
       : x;
     const ov = document.createElement('div');
     ov.className = 'overlay';
-    ov.innerHTML = `<div class="card"><div class="big-letter lat" dir="ltr">${esc(c.big)}</div>
+    const wide = c.big.length > 2 ? ' wide' : ''; // "Level 3" needs a smaller size than "Bb"
+    ov.innerHTML = `<div class="card"><div class="big-letter lat${wide}" dir="ltr">${esc(c.big)}</div>
       <p class="ov-text">🎉 ${esc(c.text)} 🎉</p></div>`;
     document.body.appendChild(ov);
     Sfx.fanfare();

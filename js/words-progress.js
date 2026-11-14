@@ -4,7 +4,9 @@
 
 const LEVEL_UP = { window: 10, need: 8 }; // 8 of the last 10 stage words right on the first try
 
-const similar = (a, b) => a === b || SIMILAR.some(g => g.includes(a) && g.includes(b));
+const inGroup = (groups, a, b) => a === b || groups.some(g => g.includes(a) && g.includes(b));
+const similar = (a, b) => inGroup(SIMILAR, a, b);
+const hearAlike = (a, b) => inGroup(HEAR_ALIKE, a, b);
 
 const Ladder = {
   clean() {

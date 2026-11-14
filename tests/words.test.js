@@ -8,8 +8,8 @@ vm.createContext(ctx);
 for (const f of ['words-data.js', 'core.js', 'words-progress.js', 'words-games.js']) {
   vm.runInContext(fs.readFileSync(path.join(dir, 'js', f), 'utf8'), ctx, { filename: f });
 }
-vm.runInContext('globalThis.__x = { Store, Games, WORDS, STAGES, SENTENCES, SIMILAR, Ladder, Vocab, similar, SENTENCES_STAGE };', ctx);
-const { Store, Games, WORDS, STAGES, SENTENCES, Ladder, Vocab, similar, SENTENCES_STAGE } = ctx.__x;
+vm.runInContext('globalThis.__x = { Store, Games, WORDS, STAGES, SENTENCES, SIMILAR, Ladder, Vocab, similar, hearAlike, SENTENCES_STAGE };', ctx);
+const { Store, Games, WORDS, STAGES, SENTENCES, Ladder, Vocab, similar, hearAlike, SENTENCES_STAGE } = ctx.__x;
 let fails = 0;
 const fail = (m, q) => { if (fails++ < 15) console.log('FAIL', m, JSON.stringify(q || {}, (k, v) => typeof v === 'function' ? undefined : v)); };
 const badParts = parts => [].concat(parts).some(p => p === undefined || p === null ||
@@ -72,6 +72,18 @@ for (let stage = 1; stage <= 5; stage++) {
         const t = WORDS.find(x => x.w === ok[0].value);
         if (id === 'read' && (t.stage < 1 || t.stage > stage)) fail('reading word above his stage: ' + t.w);
         if (id === 'vocab' && t.stage > stage) fail('vocab word from a stage he has not reached: ' + t.w);
+        if (id === 'read') {
+          // If a word with the same first letter could be offered, one must be: the first letter alone is not enough.
+          const could = Ladder.words().some(x => x.w !== t.w && x.w[0] === t.w[0] && x.e !== t.e && x.he !== t.he && !similar(x.w, t.w));
+          if (could && !vals.some(v => v !== t.w && v[0] === t.w[0])) fail('read: no option shares the first letter: ' + vals.join('/'));
+        }
+        if (id === 'vocab' && q.options[0].cls === 'pic') {
+          for (let a = 0; a < vals.length; a++) for (let b = a + 1; b < vals.length; b++)
+            if (hearAlike(vals[a], vals[b])) fail(`vocab listening: ${vals[a]}/${vals[b]} sound alike`);
+        }
+        if (id === 'vocab' && q.options[0].cls === 'wordopt') {
+          for (const v of vals) { const x = WORDS.find(y => y.w === v); if (x.stage < 1 || x.stage > stage) fail('vocab: English option above his reading stage: ' + v); }
+        }
       } else {
         const item = SENTENCES.find(x => x.s === q.used);
         if (ok[0].value !== item.a) fail('sentence: wrong answer marked right', q);

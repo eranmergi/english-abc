@@ -90,8 +90,9 @@ async function solved(el) {
   const star = r.firstTry && !r.hinted;
   // stat: a letter, tracked by Progress (letters page); record(): the page's own progress hook (words page).
   // Either may return something to celebrate: a learned letter, or a new level.
+  // The page hook gets `star`, not firstTry: an answer found with the 💡 hint must not move him up a level.
   const levelUp = r.q.stat ? (Progress.record(r.q.stat, r.firstTry) ? r.q.stat : null)
-    : r.q.record ? r.q.record(r.firstTry) : null;
+    : r.q.record ? r.q.record(star) : null;
   r.results.push(star);
   if (star) {
     r.stars++;
