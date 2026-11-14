@@ -88,7 +88,10 @@ async function solved(el) {
   Sfx.good();
   Screens.mascot('happy');
   const star = r.firstTry && !r.hinted;
-  const learned = r.q.stat ? Progress.record(r.q.stat, r.firstTry) : false;
+  // stat: a letter, tracked by Progress (letters page); record(): the page's own progress hook (words page).
+  // Either may return something to celebrate: a learned letter, or a new level.
+  const levelUp = r.q.stat ? (Progress.record(r.q.stat, r.firstTry) ? r.q.stat : null)
+    : r.q.record ? r.q.record(r.firstTry) : null;
   r.results.push(star);
   if (star) {
     r.stars++;
@@ -103,8 +106,8 @@ async function solved(el) {
   const praise = pick(SAY.praise).concat(name && Math.random() < 0.4 ? [name] : []);
   await Speech.say(praise.concat(r.q.rightSay || []));
   if (App.round !== r) return;
-  if (learned) {
-    await Screens.learned(r.q.stat);
+  if (levelUp) {
+    await Screens.learned(levelUp);
     if (App.round !== r) return;
   }
   await sleep(300);
@@ -134,7 +137,12 @@ function onClick(e) {
   const d = el.dataset;
   if (d.opt !== undefined) return onOption(el);
   if (d.tile !== undefined) return onTile(el);
-  if (d.game) { Sfx.pop(); return startGame(d.game); }
+  if (d.game) {
+    const lock = Screens.gameLock(d.game); // a game the child has not reached yet
+    if (lock) { Sfx.bad(); Screens.nudge(el); return Speech.say(lock); }
+    Sfx.pop();
+    return startGame(d.game);
+  }
   if (d.letter) return Screens.toggleLetter(d.letter);
   if (d.sticker !== undefined) { Sfx.pop(); return Screens.nudge(el, 'bounce'); }
   const s = Store.get();
@@ -163,7 +171,7 @@ function onClick(e) {
         Screens.parent();
       } else {
         el.classList.add('armed');
-        el.textContent = 'בטוחים? לחיצה נוספת מוחקת אותיות, כוכבים ומדבקות';
+        el.textContent = 'בטוחים? לחיצה נוספת מוחקת את כל ההתקדמות, הכוכבים והמדבקות';
         setTimeout(() => {
           if (!el.isConnected) return;
           el.classList.remove('armed');
@@ -181,6 +189,7 @@ function onInput(e) {
   else if (t.id === 'sfx') s.sfx = t.checked;
   else if (t.dataset.lang) { s.voice[t.dataset.lang] = t.value; Store.save(); Speech.choose(); return; }
   else if (t.name === 'caseMode') { if (t.checked) s.caseMode = t.value; }
+  else if (Screens.parentInput && Screens.parentInput(t)) return; // the page's own settings
   else return;
   Store.save();
 }

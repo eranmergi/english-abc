@@ -28,11 +28,12 @@ function shuffle(arr) {
 
 /* ---------- saved state (localStorage; plays on without it if the browser blocks storage) ---------- */
 const Store = (() => {
-  const KEY = 'abc.v1'; // not alefbet.v1: both games may share one tablet's storage
-  const defaults = () => ({
+  // Each page has its own key (APP.key): all the family's games share one github.io origin.
+  const KEY = APP.key;
+  const defaults = () => Object.assign({
     name: '', known: [], pinned: [], stats: {}, stars: 0,
     caseMode: 'upper', rate: 0.85, voice: { he: '', en: '' }, sfx: true, setupDone: false,
-  });
+  }, JSON.parse(JSON.stringify(APP.defaults || {}))); // the page's own fields
   let state = null;
 
   function clean(s) {

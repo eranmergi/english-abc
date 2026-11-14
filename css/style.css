@@ -279,3 +279,28 @@ input, select { font: inherit; user-select: text; -webkit-user-select: text; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ---------- reading/vocabulary page (words.html) ---------- */
+body.quest { background: linear-gradient(165deg, #e3e9ff 0%, #eef8ff 55%, #e9fbf6 100%) fixed; }
+body.quest .hero .title { color: #3b5bdb; }
+.tile-game.locked { filter: grayscale(.8); opacity: .6; }
+.opt.wordopt, .opt.heopt {
+  min-width: clamp(110px, 27vw, 210px); height: clamp(70px, min(16vw, 13vh), 104px); padding: 0 18px;
+  font-size: clamp(28px, min(7vw, 6vh), 46px);
+}
+.opt.wordopt { font-family: var(--lat); }
+.opt.heopt { font-family: var(--heb); font-weight: 700; }
+.show .sentence {
+  display: block; margin-top: 10px; font-size: clamp(28px, min(7vw, 7vh), 54px); line-height: 1.4;
+  background: #fff; border-radius: var(--r); padding: 8px 24px; box-shadow: 0 8px 0 var(--soft); color: var(--ink);
+}
+.sentence .blank { color: var(--accent); letter-spacing: 2px; }
+.picture.small { font-size: clamp(56px, min(14vw, 12vh), 96px); }
+.slots.long { gap: 6px; }
+.slots.long .slot {
+  width: clamp(42px, min(12vw, 11vh), 80px); height: clamp(54px, min(14vw, 13vh), 96px);
+  font-size: clamp(32px, min(9vw, 8vh), 64px); border-width: 3px;
+}
+.slots.long .built { font-size: clamp(44px, min(13vw, 11vh), 100px); }
+.stage-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.stage-row .lat { color: #555b75; margin-inline-start: 6px; }

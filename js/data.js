@@ -2,6 +2,9 @@
 /* Game content: English letters and words, Hebrew meanings, stickers, spoken phrases.
    Instructions are spoken in Hebrew (the child reads Hebrew); letters and words in English. */
 
+// This page: the letters game. words.html is the reading/vocabulary page, with its own APP.
+const APP = { key: 'abc.v1', title: 'ABC', mascot: '🦖', defaults: {} };
+
 const LETTERS = Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map(ch => ({ ch }));
 const LETTER = Object.fromEntries(LETTERS.map(l => [l.ch, l]));
 

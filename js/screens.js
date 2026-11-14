@@ -1,10 +1,11 @@
 'use strict';
-/* Screens: home, game + question, learned-letter overlay, round end, sticker album, parent area. */
+/* Screens shared by both pages: home, game + question, celebration overlay, round end, sticker album,
+   parent-area panels. Each page's own parent() lives in letters-parent.js or words-parent.js.
+   APP (from the page's data file) gives the title, mascot and storage key. */
 
 const view = () => $('#app');
 const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const countWord = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
-const CASE_LABEL = { upper: 'גדולות (ABC)', lower: 'קטנות (abc)', both: 'גם וגם' };
 
 const Screens = {
   voiceChecked: false, // true once the browser had time to list its voices
@@ -20,13 +21,13 @@ const Screens = {
         <button class="icon-btn" data-act="stickers" aria-label="אלבום מדבקות">📒</button>
       </header>
       <button class="hero" data-act="hello" aria-label="שלום">
-        <span class="mascot" id="mascot">🦖</span>
-        <span class="title lat" dir="ltr">ABC</span>
+        <span class="mascot" id="mascot">${APP.mascot}</span>
+        <span class="title lat" dir="ltr">${APP.title}</span>
       </button>
       <div class="menu">
         ${GAMES_META.map((g, k) => `
-          <button class="tile-game" data-game="${g.id}" style="--c:${g.color}">
-            <span class="num">${k + 1}</span><span class="ico">${g.icon}</span><span class="lbl">${g.title}</span>
+          <button class="tile-game${this.gameLock(g.id) ? ' locked' : ''}" data-game="${g.id}" style="--c:${g.color}">
+            <span class="num">${this.gameLock(g.id) ? '🔒' : k + 1}</span><span class="ico">${g.icon}</span><span class="lbl">${g.title}</span>
           </button>`).join('')}
       </div>
       <div id="voiceWarn">${this.voiceWarning(true)}</div>
@@ -46,12 +47,19 @@ const Screens = {
         <button class="icon-btn" data-act="replay" aria-label="לשמוע שוב">🔊</button>
       </header>
       <div class="stage" id="stage"></div>
-      <div class="mascot corner" id="mascot">🦖</div>
+      <div class="mascot corner" id="mascot">${APP.mascot}</div>
     </section>`;
   },
 
+  // Spoken reason a game is still closed, or '' when it is open.
+  gameLock(id) {
+    const g = GAMES_META.find(x => x.id === id);
+    return g && g.lock ? g.lock() : '';
+  },
+
   question(r) {
-    const q = r.q, withHint = r.id === 'read' || r.id === 'build';
+    const q = r.q, withHint = q.withHint !== undefined ? q.withHint : r.id === 'read' || r.id === 'build';
+    const long = q.kind === 'build' && q.letters.length > 4 ? ' long' : '';
     const top = `
       <div class="show-row">
         <button class="show" data-act="replay" aria-label="לשמוע שוב">${q.show}</button>
@@ -59,7 +67,7 @@ const Screens = {
       </div>
       <div class="meaning" id="meaning"></div>`;
     const body = q.kind === 'build'
-      ? `<div class="slots lat" id="slots" dir="ltr">${q.letters.map((_, k) => `<span class="slot${k ? '' : ' next'}"></span>`).join('')}</div>
+      ? `<div class="slots lat${long}" id="slots" dir="ltr">${q.letters.map((_, k) => `<span class="slot${k ? '' : ' next'}"></span>`).join('')}</div>
          <div class="tiles" dir="ltr">${q.tiles.map((c, k) =>
            `<button class="tile lat" data-tile="${k}" style="animation-delay:${k * 60}ms">${c}</button>`).join('')}</div>`
       : `<div class="options" dir="ltr">${q.options.map((o, k) =>
@@ -107,16 +115,20 @@ const Screens = {
   },
   showBuilt(word) { $('#slots').innerHTML = `<span class="built">${esc(word)}</span>`; },
 
-  // Full-screen celebration when a letter moves to "known".
-  async learned(ch) {
+  // Full-screen celebration: a letter that moved to "known" (a letter string),
+  // or anything else a page wants to celebrate ({ big, text, say }).
+  async learned(x) {
+    const c = typeof x === 'string'
+      ? { big: x + x.toLowerCase(), text: 'אוֹת חֲדָשָׁה!', say: [SAY.newLetter, nameOf(x), EN(KEYWORD[x])] }
+      : x;
     const ov = document.createElement('div');
     ov.className = 'overlay';
-    ov.innerHTML = `<div class="card"><div class="big-letter lat" dir="ltr">${ch}${ch.toLowerCase()}</div>
-      <p class="ov-text">🎉 אוֹת חֲדָשָׁה! 🎉</p></div>`;
+    ov.innerHTML = `<div class="card"><div class="big-letter lat" dir="ltr">${esc(c.big)}</div>
+      <p class="ov-text">🎉 ${esc(c.text)} 🎉</p></div>`;
     document.body.appendChild(ov);
     Sfx.fanfare();
     Fx.confetti();
-    await Speech.say([SAY.newLetter, nameOf(ch), EN(KEYWORD[ch])]);
+    await Speech.say(c.say);
     await sleep(700);
     ov.remove();
   },
@@ -169,65 +181,19 @@ const Screens = {
       : ['אוֹסְפִים כּוֹכָבִים, וּמְקַבְּלִים מַדְבֵּקוֹת']);
   },
 
-  /* ---------- parent area (adult text) ---------- */
-  parent() {
-    App.screen = 'parent';
-    const s = Store.get();
-    view().innerHTML = `
-    <section class="screen parent">
-      <header class="bar">
-        <h1>⚙️ אזור הורים</h1>
-        <button class="btn" data-act="parent-done">${s.setupDone ? 'חזרה למשחק' : 'שמירה ומשחק ▶'}</button>
-      </header>
-      ${s.setupDone ? '' : `<div class="panel intro"><b>ברוכים הבאים!</b> חמישה משחקים להכרת האותיות באנגלית:
-        שם האות, אות גדולה וקטנה, הצליל הראשון של מילה, ובסוף בנייה וקריאה של מילים קצרות.
-        ההוראות מוקראות בעברית, והאותיות והמילים באנגלית. סמנו למטה את האותיות שהילד כבר מכיר:
-        המשחק יתרגל אותן ויוסיף כל פעם שתי אותיות חדשות.</div>`}
-      <div class="panel"><h2>שם הילד</h2>
-        <input id="kidName" type="text" maxlength="20" value="${esc(s.name)}" placeholder="למשל: יוֹנָתָן" autocomplete="off">
-        <p class="note">נשמע בעידוד ("כל הכבוד, יונתן!"). נשמר רק במכשיר הזה. אם הקול מבטא לא נכון, כתבו עם ניקוד.</p></div>
-      <div class="panel"><h2>אותיות</h2>
-        <p class="note">לחיצה על אות מחליפה מצב: <span class="tag known">מכיר</span> →
-          <span class="tag pinned">לתרגל עכשיו</span> → רגילה. אם לא בחרתם אותיות לתרגול, המשחק בוחר לבד
-          את שתי הבאות בתור (<span class="tag auto">מסגרת מקווקוות</span>). אות שזוהתה נכון ${LEARN_STREAK} פעמים ברצף
-          עוברת ל"מכיר" לבד. המספר מתחת לאות: תשובות נכונות בניסיון ראשון מתוך כל הפעמים.</p>
-        <div id="letterBox">${this.letterBox()}</div></div>
-      <div class="panel"><h2>אותיות גדולות או קטנות</h2>
-        <p class="note">איך יוצגו האותיות במשחקים 1 ו-3. משחק 2 תמיד מתרגל את שתיהן, והמילים תמיד באותיות קטנות.</p>
-        <div class="row">${Object.entries(CASE_LABEL).map(([k, label]) => `
-          <label class="chk"><input type="radio" name="caseMode" value="${k}" ${s.caseMode === k ? 'checked' : ''}> ${label}</label>`).join('')}</div></div>
-      <div class="panel" id="voicePanel">${this.voicePanel()}</div>
-      <div class="panel"><h2>התקדמות</h2>
-        <p>⭐ ${s.stars} כוכבים · 📒 ${Progress.stickerCount()} מתוך ${STICKERS.length} מדבקות ·
-          ${s.known.length} מתוך ${LETTERS.length} אותיות</p>
-        <p class="note">ההתקדמות נשמרת בדפדפן הזה בלבד. במכשיר אחר מתחילים מאפס.</p>
-        <button class="btn danger" data-act="reset">איפוס התקדמות</button></div>
-    </section>`;
+  /* ---------- parent area parts shared by both pages (each page adds its own parent() file) ---------- */
+  namePanel() {
+    return `<div class="panel"><h2>שם הילד</h2>
+      <input id="kidName" type="text" maxlength="20" value="${esc(Store.get().name)}" placeholder="למשל: יוֹנָתָן" autocomplete="off">
+      <p class="note">נשמע בעידוד ("כל הכבוד, יונתן!"). נשמר רק במכשיר הזה. אם הקול מבטא לא נכון, כתבו עם ניקוד.</p></div>`;
   },
 
-  letterBox() {
-    const s = Store.get(), focus = Progress.focus();
-    const grid = LETTERS.map(({ ch }) => {
-      const st = s.stats[ch];
-      const cls = s.known.includes(ch) ? 'known' : s.pinned.includes(ch) ? 'pinned' : focus.includes(ch) ? 'auto' : '';
-      return `<button class="lt lat ${cls}" data-letter="${ch}" dir="ltr">${ch}${ch.toLowerCase()}<small>${st && st.n ? `${st.ok}/${st.n}` : '&nbsp;'}</small></button>`;
-    }).join('');
-    const now = focus.length ? `לומד עכשיו: <b class="lat" dir="ltr">${focus.join(' ')}</b>` : 'הוא מכיר את כל האותיות! 🎉';
-    return `<div class="letter-grid" dir="ltr">${grid}</div><p class="note now">${now}</p>`;
-  },
-
-  toggleLetter(ch) {
+  progressPanel(extra) {
     const s = Store.get();
-    if (s.known.includes(ch)) {
-      s.known = s.known.filter(c => c !== ch);
-      s.pinned.push(ch);
-    } else if (s.pinned.includes(ch)) {
-      s.pinned = s.pinned.filter(c => c !== ch);
-    } else {
-      s.known.push(ch);
-    }
-    Store.save();
-    $('#letterBox').innerHTML = this.letterBox();
+    return `<div class="panel"><h2>התקדמות</h2>
+      <p>⭐ ${s.stars} כוכבים · 📒 ${Progress.stickerCount()} מתוך ${STICKERS.length} מדבקות · ${extra}</p>
+      <p class="note">ההתקדמות נשמרת בדפדפן הזה בלבד. במכשיר אחר מתחילים מאפס.</p>
+      <button class="btn danger" data-act="reset">איפוס התקדמות</button></div>`;
   },
 
   voiceWarning(onHome) {
