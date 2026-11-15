@@ -45,6 +45,7 @@ function onOption(btn) {
     solved(btn);
   } else {
     r.firstTry = false;
+    if (r.q.miss) r.q.miss(o.value); // a page that tracks which kind of mistake it was
     btn.disabled = true;
     btn.classList.add('wrong');
     Sfx.bad();
@@ -58,26 +59,29 @@ function onTile(btn) {
   const r = App.round;
   if (!r || r.locked || btn.disabled) return;
   const q = r.q, ch = q.tiles[Number(btn.dataset.tile)], need = q.letters[r.pos];
+  // Optional question hooks: nameAt(pos) names the letter in that place (ש can be shin or sin),
+  // wrongTile(ch, pos) gives the page's own feedback, miss(ch, pos) records the mistake.
   if (ch === need) {
     btn.disabled = true;
     btn.classList.add('used');
     Screens.fillSlot(r.pos, ch);
-    r.pos++;
+    const at = r.pos++;
     if (r.pos === q.letters.length) {
       Screens.showBuilt(q.word.w);
       solved($('#slots'));
     } else {
       Sfx.pop();
       Screens.markNextSlot(r.pos);
-      Speech.say(nameOf(ch));
+      Speech.say(q.nameAt ? q.nameAt(at) : nameOf(ch));
     }
   } else {
     r.firstTry = false;
+    if (q.miss) q.miss(ch, r.pos);
     Sfx.bad();
     Screens.nudge(btn);
     Screens.mascot('oops');
     const later = q.letters.slice(r.pos).includes(ch);
-    Speech.say(later ? SAY.notYet : ['זוֹ', nameOf(ch), '.', SAY.retry]);
+    Speech.say(q.wrongTile ? q.wrongTile(ch, r.pos) : later ? SAY.notYet : ['זוֹ', nameOf(ch), '.', SAY.retry]);
   }
 }
 
@@ -102,6 +106,7 @@ async function solved(el) {
     Screens.bumpScore();
   }
   Screens.dots(r);
+  if (r.q.solvedShow) { const s = $('.show'); if (s) s.innerHTML = r.q.solvedShow; } // e.g. the missing letter filled in
   if (r.q.meaning) Screens.meaning(r.q.meaning);
   const name = Store.get().name;
   const praise = pick(SAY.praise).concat(name && Math.random() < 0.4 ? [name] : []);
@@ -123,9 +128,10 @@ function onHint() {
   r.hinted = true;
   if (r.q.kind === 'build') {
     const need = r.q.letters[r.pos];
+    if (r.q.miss) r.q.miss(null, r.pos); // shown, not found: counts like a mistake in this place
     const tile = $$('.tile').find(b => !b.disabled && r.q.tiles[Number(b.dataset.tile)] === need);
     if (tile) tile.classList.add('glow');
-    Speech.say(nameOf(need));
+    Speech.say(r.q.nameAt ? r.q.nameAt(r.pos) : nameOf(need));
   } else {
     Speech.say(r.q.hint || r.q.prompt);
   }

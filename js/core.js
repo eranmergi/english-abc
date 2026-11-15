@@ -11,7 +11,8 @@ const pick = arr => arr[rand(arr.length)];
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 const lettersOf = w => Array.from(w.toUpperCase()).filter(c => LETTER[c]);
 // A capital letter spoken alone is read by its name ("ay", "bee"); inside a sentence "A" can become "uh".
-const nameOf = ch => ({ en: ch.toUpperCase(), solo: true });
+// A Hebrew page gives its own letter names (APP.nameOf).
+const nameOf = ch => (APP.nameOf ? APP.nameOf(ch) : { en: ch.toUpperCase(), solo: true });
 const related = (groups, a, b) => a === b || groups.some(g => g.includes(a) && g.includes(b));
 const inCase = (ch, kase) => (kase === 'lower' ? ch.toLowerCase() : ch.toUpperCase());
 const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -37,7 +38,8 @@ const Store = (() => {
   let state = null;
 
   function clean(s) {
-    const letters = v => (Array.isArray(v) ? v.filter(c => LETTER[c]) : []);
+    // known/pinned letters belong to the letters page; other pages have no LETTER table
+    const letters = v => (Array.isArray(v) && typeof LETTER !== 'undefined' ? v.filter(c => LETTER[c]) : []);
     s.known = letters(s.known);
     s.pinned = letters(s.pinned).filter(c => !s.known.includes(c));
     if (!['upper', 'lower', 'both'].includes(s.caseMode)) s.caseMode = 'upper';

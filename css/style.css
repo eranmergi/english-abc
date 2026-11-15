@@ -305,3 +305,19 @@ body.quest .hero .title { color: #3b5bdb; }
 .slots.long .built { font-size: clamp(44px, min(13vw, 11vh), 100px); }
 .stage-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .stage-row .lat { color: #555b75; margin-inline-start: 6px; }
+
+/* ---------- Hebrew spelling page (ktiv.html): right to left, Hebrew font everywhere ---------- */
+body.ktiv { background: linear-gradient(165deg, #fff0e3 0%, #fdf4ff 55%, #e6f6ff 100%) fixed; }
+body.ktiv .hero .title, body.ktiv .word, body.ktiv .slot, body.ktiv .built, body.ktiv .tile,
+body.ktiv .opt.letter, body.ktiv .big-letter { font-family: var(--heb); font-weight: 700; }
+body.ktiv .hero .title { color: #e8590c; }
+body.ktiv .word { margin-top: 8px; padding: 4px 32px 12px; font-size: clamp(52px, min(16vw, 14vh), 120px); }
+body.ktiv .show .sentence { font-family: var(--heb); }
+.gap {
+  display: inline-block; min-width: .62em; text-align: center; color: var(--accent);
+  border-bottom: 6px dashed var(--accent); line-height: 1.1;
+}
+.gap.in { color: var(--good); border-bottom-style: solid; border-bottom-color: var(--good); animation: pop .35s; }
+.sentence .blank.in { color: var(--good); letter-spacing: 0; font-weight: 700; }
+.cat-stat { color: #555b75; font-size: 15px; margin-inline-start: 6px; }
+.hard-words { font-size: 22px; font-weight: 700; line-height: 1.6; margin: 4px 0; }

@@ -3,6 +3,13 @@
    parent-area panels. Each page's own parent() lives in letters-parent.js or words-parent.js.
    APP (from the page's data file) gives the title, mascot and storage key. */
 
+// The English pages show their words left to right in the learning font (.lat); a Hebrew page
+// (APP.lang 'he') keeps the page's right-to-left direction, and its body class sets the Hebrew font.
+const HE = APP.lang === 'he';
+const LAT = HE ? '' : ' lat', LTR = HE ? '' : ' dir="ltr"';
+const LANGS = APP.langs || ['en', 'he']; // the voices this page needs
+const LANG_NAME = { en: 'אנגלית', he: 'עברית' };
+
 const view = () => $('#app');
 const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const countWord = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
@@ -22,7 +29,7 @@ const Screens = {
       </header>
       <button class="hero" data-act="hello" aria-label="שלום">
         <span class="mascot" id="mascot">${APP.mascot}</span>
-        <span class="title lat" dir="ltr">${APP.title}</span>
+        <span class="title${LAT}"${LTR}>${APP.title}</span>
       </button>
       <div class="menu">
         ${GAMES_META.map((g, k) => `
@@ -67,10 +74,10 @@ const Screens = {
       </div>
       <div class="meaning" id="meaning"></div>`;
     const body = q.kind === 'build'
-      ? `<div class="slots lat${long}" id="slots" dir="ltr">${q.letters.map((_, k) => `<span class="slot${k ? '' : ' next'}"></span>`).join('')}</div>
-         <div class="tiles" dir="ltr">${q.tiles.map((c, k) =>
-           `<button class="tile lat" data-tile="${k}" style="animation-delay:${k * 60}ms">${c}</button>`).join('')}</div>`
-      : `<div class="options" dir="ltr">${q.options.map((o, k) =>
+      ? `<div class="slots${LAT}${long}" id="slots"${LTR}>${q.letters.map((_, k) => `<span class="slot${k ? '' : ' next'}"></span>`).join('')}</div>
+         <div class="tiles"${LTR}>${q.tiles.map((c, k) =>
+           `<button class="tile${LAT}" data-tile="${k}" style="animation-delay:${k * 60}ms">${c}</button>`).join('')}</div>`
+      : `<div class="options"${LTR}>${q.options.map((o, k) =>
            `<button class="opt ${o.cls}" data-opt="${k}" style="animation-delay:${k * 70}ms">${o.html}</button>`).join('')}</div>`;
     $('#stage').innerHTML = top + body;
     this.dots(r);
@@ -124,7 +131,7 @@ const Screens = {
     const ov = document.createElement('div');
     ov.className = 'overlay';
     const wide = c.big.length > 2 ? ' wide' : ''; // "Level 3" needs a smaller size than "Bb"
-    ov.innerHTML = `<div class="card"><div class="big-letter lat${wide}" dir="ltr">${esc(c.big)}</div>
+    ov.innerHTML = `<div class="card"><div class="big-letter${LAT}${wide}"${LTR}>${esc(c.big)}</div>
       <p class="ov-text">🎉 ${esc(c.text)} 🎉</p></div>`;
     document.body.appendChild(ov);
     Sfx.fanfare();
@@ -200,11 +207,12 @@ const Screens = {
   voiceWarning(onHome) {
     if (!this.voiceChecked && !Speech.loaded) return '';
     if (!Speech.supported) return '<p class="warn">הדפדפן הזה לא יודע להקריא. פתחו את המשחק ב-Chrome, Edge או Safari.</p>';
-    const missing = [!Speech.current('en') && 'אנגלית', !Speech.current('he') && 'עברית'].filter(Boolean);
+    const missing = LANGS.filter(l => !Speech.current(l)).map(l => LANG_NAME[l]);
     if (!missing.length) return '';
+    const installed = LANGS.includes('en') ? 'שמותקנות עברית ואנגלית' : 'שמותקנת עברית';
     return `<p class="warn">⚠️ לא נמצא בדפדפן הזה קול ב${missing.join(' וב')}, ולכן חלק מהדיבור לא יישמע.
       במחשב Windows: פתחו ב-Microsoft Edge. בטאבלט אנדרואיד: Chrome, ובהגדרות "המרת טקסט לדיבור" ודאו
-      שמותקנות עברית ואנגלית. באייפד: Safari. ${onHome ? '' : 'אחר כך חזרו לכאן ובחרו קול.'}</p>`;
+      ${installed}. באייפד: Safari. ${onHome ? '' : 'אחר כך חזרו לכאן ובחרו קול.'}</p>`;
   },
 
   voiceSelect(lang, label) {
@@ -219,9 +227,9 @@ const Screens = {
   voicePanel() {
     const s = Store.get();
     return `<h2>קולות וצלילים</h2>${this.voiceWarning(false)}
-      ${this.voiceSelect('en', 'קול באנגלית')}
+      ${LANGS.includes('en') ? this.voiceSelect('en', 'קול באנגלית') : ''}
       ${this.voiceSelect('he', 'קול בעברית')}
-      <div class="row"><button class="btn ghost" data-act="voice-test">🔊 בדיקה (עברית ואנגלית)</button></div>
+      <div class="row"><button class="btn ghost" data-act="voice-test">🔊 בדיקה (${LANGS.map(l => LANG_NAME[l]).reverse().join(' ו')})</button></div>
       <label class="row">מהירות דיבור <input id="rate" type="range" min="0.6" max="1.1" step="0.05" value="${s.rate}"></label>
       <label class="chk"><input id="sfx" type="checkbox" ${s.sfx ? 'checked' : ''}> צלילי משחק</label>`;
   },
